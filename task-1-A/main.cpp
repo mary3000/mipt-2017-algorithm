@@ -1,61 +1,87 @@
-//Найдите все вхождения шаблона в строку.
-//Найдите все вхождения шаблона в строку.Длина шаблона – p, длина строки – n.Время O(n + p), доп.память – O(p).
-//Вариант 1. С помощью префикс - функции;
+п»ї//РђРІС‚РѕСЂ: РњР°СЂРёСЏ Р¤РµРѕС„Р°РЅРѕРІР°, 696   
+
+//РќР°Р№РґРёС‚Рµ РІСЃРµ РІС…РѕР¶РґРµРЅРёСЏ С€Р°Р±Р»РѕРЅР° РІ СЃС‚СЂРѕРєСѓ.
+//РќР°Р№РґРёС‚Рµ РІСЃРµ РІС…РѕР¶РґРµРЅРёСЏ С€Р°Р±Р»РѕРЅР° РІ СЃС‚СЂРѕРєСѓ.Р”Р»РёРЅР° С€Р°Р±Р»РѕРЅР° вЂ“ p, РґР»РёРЅР° СЃС‚СЂРѕРєРё вЂ“ n.Р’СЂРµРјСЏ O(n + p), РґРѕРї.РїР°РјСЏС‚СЊ вЂ“ O(p).
+//Р’Р°СЂРёР°РЅС‚ 1. РЎ РїРѕРјРѕС‰СЊСЋ РїСЂРµС„РёРєСЃ - С„СѓРЅРєС†РёРё;
 //p <= 30000, n <= 300000.
 
 #include<iostream>
 #include<vector>
 #include<fstream>
 
-//Алгоритм КМП
-//Т.к. алгоритм онлайн, пришлось ввод-вывод с файла оставить в функции, иначе бы нарушилась асимптотика.
-void prefix() {
-	std::ifstream fin("input.txt");
-	std::ofstream fout("output.txt");
+//Р¤СѓРЅРєС†РёСЏ РѕР±СЂР°Р±РѕС‚РєРё СЃРёРјРІРѕР»Р°
+int ProcessLetter(char text_char, std::vector<char> &pattern, bool &is_pattern,
+	std::vector<int> &pi, int &prev_pi, int position) {
 
-	std::vector<char> pattern; //Здесь будет паттерн
-	std::vector<int> pi; //Вычисленные значения префикс-функции
-	char text_char;
-	//Так как нам не нужна префикс-функция от всего текста, 
-	//будем хранить префикс функцию от паттерна и предыдущего
+	if (text_char == '\n' && !is_pattern) { //РїСЂРѕРїСѓСЃРєР°РµРј Р»РёС€РЅРёРµ РїСЂРѕР±РµР»С‹
+		return -1;
+	}
+	if (is_pattern) { //Р·Р°РїРѕР»РЅСЏРµРј РїР°С‚С‚РµСЂРЅ
+		pattern.push_back(text_char);
+		if (text_char == '\n') { //РµСЃР»Рё РїР°С‚С‚РµСЂРЅ РєРѕРЅС‡РёР»СЃСЏ, Р·Р°РїРѕРјРёРЅР°РµРј СЌС‚Рѕ
+			is_pattern = false;
+		}
+	}
+
+	while (pattern[prev_pi] != text_char && prev_pi != 0) { //РёС‰РµРј РјР°РєСЃРёРјР°Р»СЊРЅС‹Р№ Р±РѕСЂРґРµСЂ
+		prev_pi = pi[prev_pi - 1];
+	}
+
+	if (pattern[prev_pi] == text_char) {
+		prev_pi++;
+		if (!is_pattern && prev_pi == (pattern.size() - 1)) { //Р•СЃР»Рё Р±РѕСЂРґРµСЂ СЂР°РІРµРЅ РїРѕ РґР»РёРЅРµ РїР°С‚С‚РµСЂРЅСѓ, РјС‹ РЅР°С€Р»Рё РІС…РѕР¶РґРµРЅРёРµ
+			return (position - 2 * (pattern.size() - 1));
+		}
+	}
+	else {
+		prev_pi = 0;
+	}
+
+	if (is_pattern) { //Р—Р°РїРѕРјРёРЅР°РµРј РїСЂРµС„РёРєСЃ-С„СѓРЅРєС†РёСЋ РґР»СЏ РїР°С‚С‚РµСЂРЅР°
+		pi.push_back(prev_pi);
+	}
+	return -1;
+}
+
+//РђР»РіРѕСЂРёС‚Рј РљРњРџ
+//Рў.Рє. Р°Р»РіРѕСЂРёС‚Рј РѕРЅР»Р°Р№РЅ, РїСЂРёС€Р»РѕСЃСЊ РІРІРѕРґ-РІС‹РІРѕРґ СЃ С„Р°Р№Р»Р° РѕСЃС‚Р°РІРёС‚СЊ РІ С„СѓРЅРєС†РёРё, РёРЅР°С‡Рµ Р±С‹ РЅР°СЂСѓС€РёР»Р°СЃСЊ Р°СЃРёРјРїС‚РѕС‚РёРєР°.
+void Prefix(const char* file_in, const char* file_out) {
+	std::ifstream fin(file_in);
+	std::ofstream fout(file_out);
+
+	std::vector<char> pattern; //Р—РґРµСЃСЊ Р±СѓРґРµС‚ РїР°С‚С‚РµСЂРЅ
+	std::vector<int> pi; //Р’С‹С‡РёСЃР»РµРЅРЅС‹Рµ Р·РЅР°С‡РµРЅРёСЏ РїСЂРµС„РёРєСЃ-С„СѓРЅРєС†РёРё
+
+	//РўР°Рє РєР°Рє РЅР°Рј РЅРµ РЅСѓР¶РЅР° РїСЂРµС„РёРєСЃ-С„СѓРЅРєС†РёСЏ РѕС‚ РІСЃРµРіРѕ С‚РµРєСЃС‚Р°, 
+	//Р±СѓРґРµРј С…СЂР°РЅРёС‚СЊ РїСЂРµС„РёРєСЃ С„СѓРЅРєС†РёСЋ РѕС‚ РїР°С‚С‚РµСЂРЅР° Рё РїСЂРµРґС‹РґСѓС‰РµРіРѕ
 	int prev_pi = 0; 
-	int position = 1; //Позиция в слове pattern + ' ' + text
-	bool is_pattern = true; //проверка, где мы находимся сейчас, в паттерне или в тексте
+	int position = 1; //РџРѕР·РёС†РёСЏ РІ СЃР»РѕРІРµ pattern + ' ' + text
+	bool is_pattern = true; //РїСЂРѕРІРµСЂРєР°, РіРґРµ РјС‹ РЅР°С…РѕРґРёРјСЃСЏ СЃРµР№С‡Р°СЃ, РІ РїР°С‚С‚РµСЂРЅРµ РёР»Рё РІ С‚РµРєСЃС‚Рµ
+	char text_char;
+	int occurence = -1; //РїРѕР·РёС†РёСЏ РІС…РѕР¶РґРµРЅРёСЏ, РµСЃР»Рё РІС…РѕР¶РґРµРЅРёСЏ РЅРµС‚, С‚Рѕ -1
+
+	//РќР°С‡Р°Р»СЊРЅР°СЏ РёРЅРёС†РёР°Р»РёР·Р°С†РёСЏ
 	fin.get(text_char);
 	pi.push_back(0);
 	pattern.push_back(text_char);
+
 	while (fin.get(text_char)) {
-		if (text_char == '\n' && !is_pattern) { //пропускаем лишние пробелы
-			continue;
-		}
-		if (is_pattern) { //заполняем pattern
-			pattern.push_back(text_char);
-		}
-		if (text_char == '\n' && is_pattern) { //разделитель паттерна и текста
-			is_pattern = false;
-		}
-		while (pattern[prev_pi] != text_char && prev_pi != 0) { //ищем максимальный бордер
-			prev_pi = pi[prev_pi - 1];
-		}
-		if (pattern[prev_pi] == text_char) {
-			prev_pi++;
-			if (!is_pattern && prev_pi == (pattern.size() - 1)) { //Если бордер равен по длине паттерну, мы нашли вхождение
-				fout << position - 2 * (pattern.size() - 1) << ' ';
-			}
-		}
-		else {
-			prev_pi = 0;
-		}
-		if (is_pattern) { //Запоминаем префикс-функцию для паттерна
-			pi.push_back(prev_pi);
+		occurence = ProcessLetter(text_char, pattern, is_pattern, pi, prev_pi, position);
+		if (occurence >= 0) {
+			fout << occurence << ' ';
 		}
 		position++;
 	}
+
 	fin.close();
 	fout.close();
 }
 
 int main() {
-	prefix();
+	const char* file_in = "input.txt";
+	const char* file_out = "output.txt";
+
+	Prefix(file_in, file_out);
+
 	return 0;
 }
