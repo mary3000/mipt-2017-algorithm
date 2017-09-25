@@ -69,7 +69,7 @@ void Trie::Add(std::string str) {
 				position = i;
 			}
 			//создаем новый узел.
-			if (node->childs[str[i] - 'a'] == NULL) {
+			if (node->childs[str[i] - 'a'] == nullptr) {
 				Node* next_node = new Node();
 				next_node->parent = node;
 				next_node->curr_char = str[i];
@@ -95,9 +95,9 @@ void Trie::Add(std::string str) {
 //Суффиксные ссылки и дельта-функции находятся с помощью т.н. "ленивой рекурсии".
 
 Node* Trie::get_delta(Node* node, char curr_char) {
-	if (node->delta[curr_char - 'a'] == NULL) {
+	if (node->delta[curr_char - 'a'] == nullptr) {
 		//если есть переход по данному символу, дельта-функция равна этому узлу-сыну.
-		if (node->childs[curr_char - 'a'] != NULL) {
+		if (node->childs[curr_char - 'a'] != nullptr) {
 			node->delta[curr_char - 'a'] = node->childs[curr_char - 'a'];
 		}
 		//если узел - корень без перехода по символу, то это сам корень.
@@ -113,7 +113,7 @@ Node* Trie::get_delta(Node* node, char curr_char) {
 }
 
 Node* Trie::get_pi(Node* node) {
-	if (node->pi == NULL) {
+	if (node->pi == nullptr) {
 		//задаем начальные значения рекурсии для корня и сына корня.
 		if (node == root_ || node->parent == root_) {
 			node->pi = root_;
@@ -127,7 +127,7 @@ Node* Trie::get_pi(Node* node) {
 }
 
 Node* Trie::get_good_pi(Node* node) {
-	if (node->good_pi == NULL) {
+	if (node->good_pi == nullptr) {
 		//если узел терминальный, ссылка уже сжата.
 		if (get_pi(node)->is_terminal) {
 			node->good_pi = get_pi(node);
@@ -178,13 +178,13 @@ void Trie::find_occurence(Node* node, std::vector<int>& patterns, size_t pos_in_
 }
 
 Trie::~Trie() {
-	if (root_ != NULL) {
+	if (root_ != nullptr) {
 		del(root_);
 	}
 }
 
 void Trie::del(Node* node) {
-	if (node != NULL) {
+	if (node != nullptr) {
 		for (int i = 0; i < ALPHABET_LENGTH; i++) {
 			del(node->childs[i]);
 		}
