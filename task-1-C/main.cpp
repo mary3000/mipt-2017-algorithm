@@ -12,50 +12,57 @@
 #include<vector>
 #include<string>
 #include<map>
-#include<memory>
 
 #define ALPHABET_LENGTH 26 //длина алфавита.
 
 //узел в будущем боре.
 struct Node {
+	Node();
+
 	char curr_char; //символ, по которому пришли в этот узел.
 	std::vector<size_t> position; //т.к. шаблонов в рег. выражении может быть много, заводим массив позиций в шаблоне.
 	size_t len = 0; //длина шаблона, заполняется только если вершина терминальная.
 	bool is_terminal = false; //конечная ли вершина.
 
-	std::shared_ptr<Node> parent; //родитель.
-	std::map<char, std::shared_ptr<Node>> childs; //дети по каждому символу.
+	Node* parent; //родитель.
+	std::map<char, Node*> childs; //дети по каждому символу.
 
-	std::map<char, std::shared_ptr<Node>> delta; //значение дельта-функции (функции перехода) для каждого символа.
-	std::shared_ptr<Node> pi; //суффиксная ссылка.
-	std::shared_ptr<Node> good_pi; //хорошая (сжатая) суфф. ссылка.
+	std::map<char, Node*> delta; //значение дельта-функции (функции перехода) для каждого символа.
+	Node* pi; //суффиксная ссылка.
+	Node* good_pi; //хорошая (сжатая) суфф. ссылка.
 };
+
+Node::Node() {
+	parent = pi = good_pi = nullptr;
+}
 
 //класс бора, основной для решения.
 class Trie {
 public:
-	Trie();
-
 	void Add(std::string input_str); //строит по тексту-регекспу бор.
 	void Find(std::string text); //находит вхождения регекспа в текст.
 
-private:
-	std::shared_ptr<Node> get_delta(std::shared_ptr<Node> node, char curr_char); //находит дельта-функцию (ф-бю перехода).
-	std::shared_ptr<Node> get_pi(std::shared_ptr<Node> node); //находит суфф. ссылку.
-	std::shared_ptr<Node> get_good_pi(std::shared_ptr<Node> node); //сжимает суфф. ссылку.
-	void find_occurence(std::shared_ptr<Node> node, std::vector<int>& patterns, size_t pos); //находит вхождения регекспа в позиции pos
+	Trie();
+	~Trie();
 
-	std::shared_ptr<Node> root_; //корень.
+private:
+	void del(Node* node); //для конструктора
+	Node* get_delta(Node* node, char curr_char); //находит дельта-функцию (ф-бю перехода).
+	Node* get_pi(Node* node); //находит суфф. ссылку.
+	Node* get_good_pi(Node* node); //сжимает суфф. ссылку.
+	void find_occurence(Node* node, std::vector<int>& patterns, size_t pos); //находит вхождения регекспа в позиции pos
+
+	Node* root_; //корень.
 	size_t pattern_count_ = 0; //количество паттернов, выделенных из регекспа.
 	size_t regexp_len_ = 0; //общая длина регекспа.
 };
 
 Trie::Trie() {
-	root_ = std::shared_ptr<Node>(new Node);
+	root_ = new Node();
 }
 
 void Trie::Add(std::string str) {
-	std::shared_ptr<Node> node = root_;
+	Node* node = root_;
 	size_t position = 0;
 	size_t len = 0;
 	regexp_len_ = str.length();
@@ -69,8 +76,8 @@ void Trie::Add(std::string str) {
 				position = i;
 			}
 			//создаем новый узел.
-			if (node->childs.find(str[i]) == node->childs.end()){
-				std::shared_ptr<Node> next_node(new Node);
+			if (node->childs.find(str[i]) == node->childs.end()) {
+				Node* next_node = new Node();
 				next_node->parent = node;
 				next_node->curr_char = str[i];
 				node->childs[str[i]] = next_node;
@@ -94,7 +101,7 @@ void Trie::Add(std::string str) {
 
 //Суффиксные ссылки и дельта-функции находятся с помощью т.н. "ленивой рекурсии".
 
-std::shared_ptr<Node> Trie::get_delta(std::shared_ptr<Node> node, char curr_char) {
+Node* Trie::get_delta(Node* node, char curr_char) {
 	if (node->delta.find(curr_char) == node->delta.end()) {
 		//если есть переход по данному символу, дельта-функция равна этому узлу-сыну.
 		if (node->childs.find(curr_char) != node->childs.end()) {
@@ -107,12 +114,12 @@ std::shared_ptr<Node> Trie::get_delta(std::shared_ptr<Node> node, char curr_char
 		//иначе рекурсивно спускаемся дальше по суффиксной ссылке.
 		else {
 			node->delta[curr_char] = get_delta(get_pi(node), curr_char);
-		} 
+		}
 	}
 	return node->delta[curr_char];
 }
 
-std::shared_ptr<Node> Trie::get_pi(std::shared_ptr<Node> node) {
+Node* Trie::get_pi(Node* node) {
 	if (node->pi == nullptr) {
 		//задаем начальные значения рекурсии для корня и сына корня.
 		if (node == root_ || node->parent == root_) {
@@ -126,7 +133,7 @@ std::shared_ptr<Node> Trie::get_pi(std::shared_ptr<Node> node) {
 	return node->pi;
 }
 
-std::shared_ptr<Node> Trie::get_good_pi(std::shared_ptr<Node> node) {
+Node* Trie::get_good_pi(Node* node) {
 	if (node->good_pi == nullptr) {
 		//если узел терминальный, ссылка уже сжата.
 		if (get_pi(node)->is_terminal) {
@@ -148,7 +155,7 @@ void Trie::Find(std::string text) {
 	//массив позиций вхождений паттернов в текст. 
 	//если значение в его ячейке вдруг станет равно количеству паттернов, мы нашли вхождение всего регекспа.
 	std::vector<int> patterns(text.length());
-	std::shared_ptr<Node> node = root_;
+	Node* node = root_;
 
 	//посимвольно с помощью функции перехода ищем вхождения.
 	for (size_t i = 0; i < text.length(); i++) {
@@ -157,24 +164,38 @@ void Trie::Find(std::string text) {
 	}
 }
 
-void Trie::find_occurence(std::shared_ptr<Node> node, std::vector<int>& patterns, size_t pos_in_text) {
+void Trie::find_occurence(Node* node, std::vector<int>& patterns, size_t pos_in_text) {
 	int index = 0;
 
 	//пока не спустились до корня по сжатым суфф. ссылкам, ищем терминальные вершины.
 	while (node != root_) {
-		if (!node->is_terminal) {
-			node = get_good_pi(node);
-			continue;
-		}
-		for (size_t i = 0; i < node->position.size(); i++) {
-			//Индекс - предполагаемся позиция регекспа в тексте.
-			index = pos_in_text - node->len - node->position[i] + 1;
-			//Если она вмещается в границы текста + все паттерны встали на свои места, выводим ответ.
-			if (index >= 0 && ++patterns[index] == pattern_count_ && (index + regexp_len_ <= patterns.size())) {
-				std::cout << index << ' ';
+		if (node->is_terminal) {
+			for (size_t i = 0; i < node->position.size(); i++) {
+				//Индекс - предполагаемся позиция регекспа в тексте.
+				index = pos_in_text - node->len - node->position[i] + 1;
+				//Если она вмещается в границы текста + все паттерны встали на свои места, выводим ответ.
+				if (index >= 0 && ++patterns[index] == pattern_count_ && (index + regexp_len_ <= patterns.size())) {
+					std::cout << index << ' ';
+				}
 			}
+
 		}
 		node = get_good_pi(node);
+	}
+}
+
+Trie::~Trie() {
+	if (root_ != nullptr) {
+		del(root_);
+	}
+}
+
+void Trie::del(Node* node) {
+	if (node != nullptr) {
+		for (auto i : node->childs) {
+			del(i.second);
+		}
+		delete node;
 	}
 }
 
