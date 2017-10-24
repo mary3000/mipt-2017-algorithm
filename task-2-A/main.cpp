@@ -65,7 +65,7 @@ void SuffixArray::sort_by_classes() {
 }
 
 void SuffixArray::sort(int len) {
-  //Обновляем классы, и сдвигаем на len позиций вперед.
+  //Обновляем классы, и сдвигаем суффиксы на len позиций вперед.
   old_class = new_class;
   for (int &i : sorted_array) {
     i = (sorted_array.size() + i - len) % sorted_array.size();
@@ -119,8 +119,8 @@ void SuffixArray::ToSuffixArray(const string& new_str, vector<int>& answer) {
     new_class[sorted_array[i]] = class_number;
   }
   //Сортируем по 2^k первым символам. Благодаря природе суффиксов,
-  //длины 2^k нам будет достаточно, ведь по индукции мы уже отсортировали префиксы длиной 2^(k-1).
-  //Благодаря цилкических сдвигам мы получим всю информацию про обе половинки.
+  //длины 2^k нам будет достаточно, ведь мы уже отсортировали префиксы длиной 2^(k-1).
+  //Благодаря циклическим сдвигам мы получим всю информацию про обе половинки.
   for (int len = 1; len <= str.size(); len *= 2) {
     sort(len);
   }
@@ -130,7 +130,7 @@ void SuffixArray::ToSuffixArray(const string& new_str, vector<int>& answer) {
   new_class.clear();
 }
 
-//Записывает в lcp наибольшие общие префиксы в упорядоченном массиве суффиксов.
+//Записывает в lcp наибольшие общие префиксы соседних в суфф. массиве суффиксов.
 void LCP(const string &str, vector<long long>& lcp) {
   lcp.resize(str.size());
   SuffixArray suff;
