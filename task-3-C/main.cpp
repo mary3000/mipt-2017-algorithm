@@ -79,32 +79,25 @@ bool IsBiggerAngle(pair<double, double> a1, pair<double, double> a2, pair<double
 
 //Вычисляет сумму минковского для p1 и p2, кладет ответ в answer.
 void MinkowskiSum(const Polygon &p1, const Polygon &p2, Polygon &answer) {
-  int i = 0, j = 0, i_tmp = 0;
-  pair<double, double> a1;
+  int i = 0, j = 0;
+  pair<double, double> p1_start, p1_end, p2_start, p2_end;
   //Пока не обойдем один мз многоугольников, добавляем углы в ответ.
   while (i <= p1.points.size() && j <= p2.points.size()) {
-    pair<double, double> a1 = p1.points[(i + p1.start_number) % p1.points.size()];
+    //Задаем текущие точки и следующие по часовой стрелке.
+    p1_start = p1.points[(i + p1.start_number) % p1.points.size()];
+    p1_end = p1.points[(i + p1.start_number + 1) % p1.points.size()];
+    p2_start = p2.points[(j + p2.start_number) % p2.points.size()];
+    p2_end = p2.points[(j + p2.start_number + 1) % p2.points.size()];
     //Т.к. начало - точка с номером start_number, алгоритм стартует с нее.
-    answer.Add(Sum(a1,
-                   p2.points[(j + p2.start_number) % p2.points.size()]));
+    answer.Add(Sum(p1_start, p2_start));
     //Каждый раз мы должны добавить точки, создающие ребро с меньшим поворотом по часовой стрелке,
     //чтобы построить именно контур (все другие точки будут внутренние).
-
-    if (IsBiggerAngle(a1,
-                      p1.points[(i + p1.start_number + 1) % p1.points.size()],
-                      p2.points[(j + p2.start_number) % p2.points.size()],
-                      p2.points[(j + p2.start_number + 1) % p2.points.size()]
-    )) {
-      i_tmp = i + 1;
+    if (IsBiggerAngle(p1_start, p1_end, p2_start, p2_end)) {
+      i++;
     }
-    if (IsBiggerAngle(p2.points[(j + p2.start_number) % p2.points.size()],
-                      p2.points[(j + p2.start_number + 1) % p2.points.size()],
-                      p1.points[(i + p1.start_number) % p1.points.size()],
-                      p1.points[(i + p1.start_number + 1) % p1.points.size()]
-    )) {
+    if (IsBiggerAngle(p2_start, p2_end, p1_start, p1_end)) {
       j++;
     }
-    i = i_tmp;
   }
 }
 
@@ -117,8 +110,7 @@ bool HasZeroPoint(const Polygon &p1, const Polygon &p2) {
     pair<double, double> prev_point = p.points[0];
     pair<double, double> curr_point;
     for (int i = 1; i < p.points.size(); i++) {
-      curr_point.first = p.points[i].first;
-      curr_point.second = p.points[i].second;
+      curr_point = p.points[i];
       if (prev_point.first >= 0 && prev_point.second >= 0) {
         first = true;
       }
@@ -147,8 +139,7 @@ bool HasZeroPoint(const Polygon &p1, const Polygon &p2) {
           }
         }
       }
-      prev_point.first = curr_point.first;
-      prev_point.second = curr_point.second;
+      prev_point = curr_point;
     }
     return first && second && third && fourth;
   } else {
