@@ -39,36 +39,6 @@ void Polyhedron::Add(const Point &p) {
   points.push_back(p);
 }
 
-bool IsBiggerAngle(const pair<double, double> &a1, const pair<double, double> &a2,
-                   const pair<double, double> &b1, const pair<double, double> &b2) {
-  pair<double, double> v1 = Sum(a2, pair<double, double>(-a1.first, -a1.second));
-  pair<double, double> v2 = Sum(b2, pair<double, double>(-b1.first, -b1.second));
-  double len1 = sqrt(v1.first*v1.first + v1.second*v1.second);
-  double len2 = sqrt(v2.first*v2.first + v2.second*v2.second);
-  //Нормируем векторы.
-  v1.first = v1.first / len1;
-  v1.second = v1.second / len1;
-  v2.first = v2.first / len2;
-  v2.second = v2.second / len2;
-  //Дальше идет разбор случаев, основанный на взаимном расположении векторов,
-  //и том, что x - это косинус, а y - это синус.
-  if (v1.second >= 0 && v2.second >= 0) {
-    return v1.first <= v2.first;
-  }
-  if (v1.second <= 0 && v2.second <= 0) {
-    return v1.first >= v2.first;
-  }
-  if (v1.second >= 0) {
-    if (v2.first >= 0) {
-      return v1.first >= 0 || v1.second >= -v2.second;
-    }
-    return v1.first >= 0 && v1.second <= -v2.second;
-  }
-  if (v1.second <= 0) {
-    return v2.first <= 0 && v2.second <= -v1.second;
-  }
-}
-
 void ConvexHull(const Polyhedron &polyhedron) {
   int min_index = 0;
   for (int i = 0; i < polyhedron.points.size(); i++) {
