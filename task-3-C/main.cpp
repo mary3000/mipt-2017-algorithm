@@ -90,7 +90,7 @@ void MinkowskiSum(const Polygon &p1, const Polygon &p2, Polygon &answer) {
   int i = 0, j = 0;
   pair<double, double> p1_start, p1_end, p2_start, p2_end;
   //Пока не обойдем один мз многоугольников, добавляем углы в ответ.
-  while (i <= p1.points.size() && j <= p2.points.size()) {
+  while (i <= p1.points.size() || j <= p2.points.size()) {
     //Задаем текущие точки и следующие по часовой стрелке, начиная со страртовых.
     p1_start = p1.points[(i + p1.start_number) % p1.points.size()];
     p1_end = p1.points[(i + p1.start_number + 1) % p1.points.size()];
