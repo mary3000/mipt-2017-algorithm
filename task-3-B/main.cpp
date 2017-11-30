@@ -5,7 +5,7 @@
  * Даны n точек в пространстве. Никакие 4 точки не лежат в одной полуплоскости.
  * Найдите выпуклую оболочку этих точек за O(n2).
  *
- * Описание решения:
+ * Описание решения:  
  * Используем идею алгоритма Джарвиса. Т.е., каждый раз будем находить грань с максимальным углом между ней
  * и текущей гранью. А точнее, найдем стартовую грань, создадим очередь рассматриваемых граней, а также контур ребер,
  * который будет означать, что данные ребра мы еще не рассмотрели до конца. Будем доставать из очереди очередную грань
@@ -170,7 +170,7 @@ void FindFirstFace(const Polyhedron &polyhedron, array<int, 3> &answer) {
 }
 
 //Ищет точку, образующую грань с максимальным углом с данной (face) гранью.
-int MaxFacesAngle(const Polyhedron &polyhedron, const array<int, 3> &face) {
+int MaxFacesAngle(const Polyhedron &polyhedron, const array<int, 3> &face, int i) {
   LineSegment v1(polyhedron.points[face[0]], polyhedron.points[face[1]]);
   LineSegment v2(polyhedron.points[face[0]], polyhedron.points[face[2]]);
   //Нормаль к текущей грани.
@@ -224,7 +224,7 @@ void ConvexHull(const Polyhedron &polyhedron, vector<array<int, 3>> &convex_hull
         continue;
       }
       //Индекс точки с максимальным углом.
-      int max_index = MaxFacesAngle(polyhedron, face);
+      int max_index = MaxFacesAngle(polyhedron, face, i);
       faces.push({face[i], max_index, face[(i + 1) % 3]});
       //Перестраиваем оболочку в соответствии с новой гранью.
       for (int j = 0; j < 3; j++) {
