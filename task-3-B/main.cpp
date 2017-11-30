@@ -152,46 +152,64 @@ void FindFirstFace(const Polyhedron &polyhedron, array<int, 3> &answer) {
   answer = {first_index, second_index, third_index};
 }
 
+//Ищет точку, образующую грань с максимальным углом с данной (face) гранью.
+int MaxFacesAngle(const Polyhedron &polyhedron, const array<int, 3> &face) {
+  LineSegment v1(polyhedron.points[face[0]], polyhedron.points[face[1]]);
+  LineSegment v2(polyhedron.points[face[0]], polyhedron.points[face[2]]);
+  //Нормаль к текущей грани.
+  LineSegment normal = CrossProduct(v1, v2);
+
+  double max_cos = -1;
+  int max_index = 0;
+  for (int j = 0; j < polyhedron.points.size(); j++) {
+    if (j == face[0] || j == face[1] || j == face[2]) {
+      continue;
+    }
+    //Нормаль к рассматриваемой грани.
+    LineSegment curr_normal = CrossProduct(LineSegment(polyhedron.points[face[i]], polyhedron.points[j]),
+                                           LineSegment(polyhedron.points[face[i]], polyhedron.points[face[(i + 1) % 3]]));
+    double curr_cos = DotProduct(normal, curr_normal);
+    curr_cos /= normal.Len() * curr_normal.Len();
+    //Чем меньше угол между нормалями, тем больше угол между гранями.
+    if (curr_cos >= max_cos) {
+      max_cos = curr_cos;
+      max_index = j;
+    }
+  }
+  return max_index;
+}
+
+//Ищет минимальную выпуклую оболочку.
 void ConvexHull(const Polyhedron &polyhedron, vector<array<int, 3>> &convex_hull) {
   array<int, 3> first_face;
   FindFirstFace(polyhedron, first_face);
 
+  //Создаем контур, ребра которого мы будем рассматривать.
   vector<vector<bool>> boundary(polyhedron.points.size());
   for (int i = 0; i < boundary.size(); i++) {
     boundary[i] = vector<bool>(polyhedron.points.size());
   }
+  //Добавляем в контур первые 3 ребра из начальной грани.
   for (int i = 0; i < first_face.size(); i++) {
     boundary[first_face[i]][first_face[(i + 1) % 3]] = true;
   }
+  //Создаем очередь граней.
   queue<array<int, 3>> faces;
   faces.push(first_face);
   array<int, 3> face;
+  //Основной цикл алгоритма.
   while (!faces.empty()) {
     face = faces.front();
     faces.pop();
-    LineSegment v1(polyhedron.points[face[0]], polyhedron.points[face[1]]);
-    LineSegment v2(polyhedron.points[face[0]], polyhedron.points[face[2]]);
-    LineSegment normal = CrossProduct(v1, v2);
     for (int i = 0; i < 3; i++) {
+      //Рассматриваем только ребра, принадлежащие контуру.
       if (!boundary[face[i]][face[(i + 1) % 3]]) {
         continue;
       }
-      double max_cos = -1;
-      int next_vertex_index = 0;
-      for (int j = 0; j < polyhedron.points.size(); j++) {
-        if (j == face[0] || j == face[1] || j == face[2]) {
-          continue;
-        }
-        LineSegment curr_normal = CrossProduct(LineSegment(polyhedron.points[face[i]], polyhedron.points[j]),
-                                               LineSegment(polyhedron.points[face[i]], polyhedron.points[face[(i + 1) % 3]]));
-        double curr_cos = DotProduct(normal, curr_normal);
-        curr_cos /= normal.Len() * curr_normal.Len();
-        if (curr_cos >= max_cos) {
-          max_cos = curr_cos;
-          next_vertex_index = j;
-        }
-      }
-      faces.push({face[i], next_vertex_index, face[(i + 1) % 3]});
+      //Индекс точки с максимальным углом.
+      int max_index = MaxFacesAngle(polyhedron, face);
+      faces.push({face[i], max_index, face[(i + 1) % 3]});
+      //Перестраиваем оболочку в соответствии с новой гранью.
       for (int j = 0; j < 3; j++) {
         if (boundary[faces.back()[(j + 1) % 3]][faces.back()[j]]) {
           boundary[faces.back()[(j + 1) % 3]][faces.back()[j]] = false;
@@ -200,10 +218,12 @@ void ConvexHull(const Polyhedron &polyhedron, vector<array<int, 3>> &convex_hull
         }
       }
     }
+    //Сортируем точки в грани согласно условию и добавляем в ответ.
     int first_number = face[0] < face[1] ? 0 : 1;
     first_number = face[first_number] < face[2] ? first_number : 2;
     convex_hull.push_back({face[first_number], face[(first_number + 1) % 3], face[(first_number + 2) % 3]});
   }
+  //Сортируем грани лексикографически.
   sort(convex_hull.begin(), convex_hull.end(), Comparator);
 }
 
@@ -228,7 +248,6 @@ int main() {
       }
       cout << endl;
     }
-    //...
     polyhedron.points.clear();
   }
 
