@@ -1,12 +1,13 @@
-//
-// Created by User on 07.12.2017.
-//
+/*
+ * Автор: Феофанова Мария
+ *
+ * Задача: BigInteger
+ * Решение: арифметические операции реализованы столбиком.
+ */
 
 #include <vector>
 #include <iostream>
 #include <string>
-
-using namespace std;
 
 #ifndef FIVT_BIGINTEGER_H
 #define FIVT_BIGINTEGER_H
@@ -16,24 +17,34 @@ const int kDimension = 10;
 class BigInteger {
  public:
   BigInteger() : number({0}), is_positive(true) {}
-  BigInteger(vector<char> value, bool is_positive) : number(std::move(value)), is_positive(is_positive) {}
-  BigInteger(int input);
 
-  BigInteger operator+(const BigInteger &other) const;
-  BigInteger operator-(const BigInteger &other) const;
-  BigInteger operator*(const BigInteger &other) const;
-  BigInteger operator/(BigInteger other) const;
-  BigInteger operator%(const BigInteger &other) const;
-  BigInteger operator+=(const BigInteger &other);
-  BigInteger operator-=(const BigInteger &other);
-  BigInteger operator*=(const BigInteger &other);
-  BigInteger operator/=(const BigInteger &other);
-  BigInteger operator%=(const BigInteger &other);
+  BigInteger(const std::vector<char> &value, bool is_positive) : number(value), is_positive(is_positive) {}
+
+  BigInteger(int input);
+  explicit BigInteger(const std::string &input);
+
+  //Арифметические операторы
+  friend BigInteger operator+(const BigInteger &left, const BigInteger &right);
+  friend BigInteger operator*(const BigInteger &left, const BigInteger &right);
+  friend BigInteger operator-(const BigInteger &left, const BigInteger &right);
+  friend BigInteger operator/(const BigInteger &left, const BigInteger &right);
+  friend BigInteger operator%(const BigInteger &left, const BigInteger &right);
+
+  //Состright присваивание
+  BigInteger& operator+=(const BigInteger &other);
+  BigInteger& operator-=(const BigInteger &other);
+  BigInteger& operator*=(const BigInteger &other);
+  BigInteger& operator/=(const BigInteger &other);
+  BigInteger& operator%=(const BigInteger &other);
+
+  //Унарный минус и инкременты/декременты
   BigInteger operator-() const;
   BigInteger& operator++();
   BigInteger operator++(int);
   BigInteger& operator--();
   BigInteger operator--(int);
+
+  //Логические операции
   bool operator==(const BigInteger &other) const;
   bool operator!=(const BigInteger &other) const;
   bool operator<(const BigInteger &other) const;
@@ -41,22 +52,28 @@ class BigInteger {
   bool operator>(const BigInteger &other) const;
   bool operator>=(const BigInteger &other) const;
 
+  //Преобразование в bool и string
   explicit operator bool() const;
-  string toString() const;
+  std::string toString() const;
 
-  //private:
-  vector<char> number;
-  bool is_positive;
+  //Операторы ввода-вывода
+  friend std::ostream& operator<<(std::ostream &os,  const BigInteger &big_int);
+  friend std::istream& operator>>(std::istream &is, BigInteger &big_int);
 
-  friend ostream& operator<<(ostream& os,  const BigInteger &big_int);
-  friend istream& operator>>(istream& is, BigInteger &big_int);
-
+  //Операторы для int + BigInteger
   friend BigInteger operator-(int first, const BigInteger &second);
   friend BigInteger operator+(int first, const BigInteger &second);
   friend BigInteger operator*(int first, const BigInteger &second);
   friend BigInteger operator/(int first, const BigInteger &second);
   friend BigInteger operator%(int first, const BigInteger &second);
 
+  private:
+  //Вектор, состоящий из разрядов в десятичном представлении
+  std::vector<char> number;
+  //Знак числа
+  bool is_positive;
+
+  //Вспомогательные функции
   BigInteger positive_addition(const BigInteger &other) const;
   BigInteger positive_subtraction(const BigInteger &other) const;
   int small_division(const BigInteger &other);
@@ -77,27 +94,28 @@ BigInteger::BigInteger(int input) {
   }
 }
 
-BigInteger BigInteger::operator+(const BigInteger &other) const {
-  if (is_positive != other.is_positive) {
-    if (is_positive) {
-      if (*this >= -other) {
-        return positive_subtraction(other);
+//Сложение столбиком
+BigInteger operator+(const BigInteger& left, const BigInteger& right) {
+  if (left.is_positive != right.is_positive) {
+    if (left.is_positive) {
+      if (left >= -right) {
+        return left.positive_subtraction(right);
       }
-      return -other.positive_subtraction(*this);
+      return -right.positive_subtraction(left);
     }
-    if (other >= -*this) {
-      return other.positive_subtraction(*this);
+    if (right >= -left) {
+      return right.positive_subtraction(left);
     }
-    return -positive_subtraction(other);
+    return -left.positive_subtraction(right);
   }
-  return positive_addition(other);
+  return left.positive_addition(right);
 }
 
+//Вычитает большее число из меньшего
 BigInteger BigInteger::positive_subtraction(const BigInteger &other) const {
-  vector<char> new_number;
+  std::vector<char> new_number;
   bool remainder = false;
   int first, second;
-  first = second = 0;
   for (size_t i = 0; i < number.size(); i++) {
     first = number[i] - remainder;
     second = i < other.number.size() ? other.number[i] : 0;
@@ -115,14 +133,14 @@ BigInteger BigInteger::positive_subtraction(const BigInteger &other) const {
   return BigInteger(new_number, true);
 }
 
+//Складывает числа с одинаковым знаком
 BigInteger BigInteger::positive_addition(const BigInteger &other) const {
-  vector<char> new_number;
-  size_t max_length = number.size() > other.number.size() ? number.size() : other.number.size();
+  std::vector<char> new_number;
+  size_t max_length = number.size() >= other.number.size() ? number.size() : other.number.size();
   bool remainder = false;
   int first, second;
-  first = second = 0;
   for (size_t i = 0; i <= max_length; i++) {
-    if (!remainder && i >= number.size() && i >= other.number.size()) {
+    if (!remainder && i == max_length) {
       break;
     }
     first = i < number.size() ? number[i] : 0;
@@ -133,58 +151,62 @@ BigInteger BigInteger::positive_addition(const BigInteger &other) const {
   return BigInteger(new_number, is_positive);
 }
 
-BigInteger BigInteger::operator-(const BigInteger &other) const {
-  return *this + BigInteger(other.number, !other.is_positive);
+BigInteger operator-(const BigInteger& left, const BigInteger& right) {
+  return left + BigInteger(right.number, !right.is_positive);
 }
 
-BigInteger BigInteger::operator*(const BigInteger &other) const {
-  BigInteger new_number;
-  vector<char> tmp_number;
+//Умножение столбиком
+BigInteger operator*(const BigInteger& left, const BigInteger& right) {
+  if ((left.number.size() == 1 && left.number[0] == 0) ||
+      (right.number.size() == 1 && right.number[0] == 0)) {
+    return BigInteger(0);
+  }
+  BigInteger result;
+  std::vector<char> curr_number;
   char remainder = 0;
   int first, second;
-  first = second = 0;
-  for (size_t i = 0; i < other.number.size(); i++) {
-    first = other.number[i];
+  for (size_t i = 0; i < right.number.size(); i++) {
+    first = right.number[i];
     for (size_t j = 0; j < i; j++) {
-      tmp_number.push_back(0);
+      curr_number.push_back(0);
     }
     remainder = 0;
-    for (size_t j = 0; j < number.size(); j++) {
-      second = number[j];
-      tmp_number.push_back((first * second + remainder) % kDimension);
+    for (char j : left.number) {
+      second = j;
+      curr_number.push_back((first * second + remainder) % kDimension);
       remainder = (first * second + remainder) / kDimension;
     }
     if (remainder != 0) {
-      tmp_number.push_back(remainder);
+      curr_number.push_back(remainder);
     }
-    new_number += BigInteger(tmp_number, true);
-    tmp_number.resize(0);
+    result += BigInteger(curr_number, true);
+    curr_number.resize(0);
   }
-  new_number.is_positive = is_positive == other.is_positive;
-  return new_number;
+  result.is_positive = (left.is_positive == right.is_positive);
+  return result;
 }
 
-BigInteger BigInteger::operator+=(const BigInteger &other) {
+BigInteger& BigInteger::operator+=(const BigInteger &other) {
   *this = *this + other;
   return *this;
 }
 
-BigInteger BigInteger::operator-=(const BigInteger &other) {
+BigInteger& BigInteger::operator-=(const BigInteger &other) {
   *this = *this - other;
   return *this;
 }
 
-BigInteger BigInteger::operator*=(const BigInteger &other) {
+BigInteger& BigInteger::operator*=(const BigInteger &other) {
   *this = *this * other;
   return *this;
 }
 
-BigInteger BigInteger::operator/=(const BigInteger &other) {
+BigInteger& BigInteger::operator/=(const BigInteger &other) {
   *this = *this / other;
   return *this;
 }
 
-BigInteger BigInteger::operator%=(const BigInteger &other) {
+BigInteger& BigInteger::operator%=(const BigInteger &other) {
   *this = *this % other;
   return *this;
 }
@@ -194,7 +216,7 @@ BigInteger BigInteger::operator-() const {
 }
 
 BigInteger& BigInteger::operator++() {
-  *this = *this + 1;
+  *this = *this + BigInteger(1);
   return *this;
 }
 
@@ -205,7 +227,7 @@ BigInteger BigInteger::operator++(int) {
 }
 
 BigInteger& BigInteger::operator--() {
-  *this = *this - 1;
+  *this = *this - BigInteger(1);
   return *this;
 }
 
@@ -215,7 +237,8 @@ BigInteger BigInteger::operator--(int) {
   return old_int;
 }
 
-vector<char> Reverse(vector<char> vec) {
+//Вместо std::reverse
+std::vector<char> Reverse(std::vector<char> vec) {
   char tmp = 0;
   for (size_t i = 0; i < vec.size()/2; i++) {
     tmp = vec[i];
@@ -225,36 +248,42 @@ vector<char> Reverse(vector<char> vec) {
   return vec;
 }
 
-BigInteger BigInteger::operator/(BigInteger other) const {
-  //TODO: do smth with 0
-  if (other == 0) {
-    return {0}; //wtf
-  }
-  bool is_other_positive = other.is_positive;
-  other.is_positive = true;
-  vector<char> reversed_result;
-  vector<char> tmp_number;
-  vector<char> reversed_number = Reverse(number);
-  for (char ch : reversed_number) {
-    tmp_number.push_back(ch);
-    BigInteger tmp_int(Reverse(tmp_number), true);
-    if (tmp_int < other) {
+//Деление столбиком
+BigInteger operator/(const BigInteger& left, const BigInteger &right) {
+  BigInteger denomirator = right;
+  bool is_positive = left.is_positive == denomirator.is_positive;
+  denomirator.is_positive = true;
+  std::vector<char> reversed_result;
+  std::vector<char> number_to_div;
+  std::vector<char> reversed_numerator = Reverse(left.number);
+  BigInteger integer_to_div;
+
+  for (char ch : reversed_numerator) {
+    if (number_to_div.size() == 1 && number_to_div[0] == 0) {
+      number_to_div.resize(0);
+    }
+    number_to_div.push_back(ch);
+    integer_to_div = BigInteger(Reverse(number_to_div), true);
+    if (integer_to_div < denomirator) {
+      if (!reversed_result.empty()) {
+        reversed_result.push_back(0);
+      }
       continue;
     }
-    reversed_result.push_back(tmp_int.small_division(other));
-    tmp_number = Reverse(tmp_int.number);
-    if (tmp_number.size() == 1 && tmp_number[0] == 0) {
-      tmp_number.resize(0);
-    }
+    reversed_result.push_back(integer_to_div.small_division(denomirator));
+    number_to_div = Reverse(integer_to_div.number);
   }
+
   if (reversed_result.empty()) {
     reversed_result.push_back(0);
   }
-  return BigInteger(Reverse(reversed_result), is_positive == is_other_positive);
+  return BigInteger(Reverse(reversed_result), is_positive);
 }
 
+//Деление, дающее < 10 в результате. В bigint остается остаток.
 int BigInteger::small_division(const BigInteger &other) {
   int count = 0;
+  //Т.к. count < 10, работает за O(n).
   while (*this >= other) {
     count++;
     *this -= other;
@@ -262,9 +291,9 @@ int BigInteger::small_division(const BigInteger &other) {
   return count;
 }
 
-BigInteger BigInteger::operator%(const BigInteger &other) const {
-  BigInteger div = *this / other;
-  return *this - div * other;
+BigInteger operator%(const BigInteger& left, const BigInteger& right) {
+  BigInteger div = left / right;
+  return left - div * right;
 }
 
 bool BigInteger::operator==(const BigInteger &other) const {
@@ -286,28 +315,40 @@ bool BigInteger::operator==(const BigInteger &other) const {
 }
 
 bool BigInteger::operator!=(const BigInteger &other) const {
-  return !(*this == other);
+  return !this->operator==(other);
 }
 
 bool BigInteger::operator<(const BigInteger &other) const {
-  if (other.number.size() > number.size()) {
+  if (number.size() == 1 && number[0] == 0) {
+    if (other.number.size() == 1 && other.number[0] == 0) {
+      return false;
+    }
+    return other.is_positive;
+  }
+  if (!is_positive && other.is_positive) {
     return true;
   }
-  if (other.number.size() < number.size()) {
+  if (is_positive && !other.is_positive) {
     return false;
+  }
+  if (other.number.size() > number.size()) {
+    return is_positive;
+  }
+  if (other.number.size() < number.size()) {
+    return !is_positive;
   }
   for (int i = number.size() - 1; i >= 0; i--) {
     if (number[i] < other.number[i]) {
-      return true;
+      return is_positive;
     } else if (number[i] > other.number[i]) {
-      return false;
+      return !is_positive;
     }
   }
-  return false;
+  return !is_positive;
 }
 
 bool BigInteger::operator<=(const BigInteger &other) const {
-  return *this < other || *this == other;
+  return this->operator==(other) || this->operator<(other);
 }
 
 bool BigInteger::operator>(const BigInteger &other) const {
@@ -318,30 +359,38 @@ bool BigInteger::operator>=(const BigInteger &other) const {
   return other <= *this;
 }
 
-ostream& operator<<(ostream &os, const BigInteger &big_int) {
+std::ostream& operator<<(std::ostream &os, const BigInteger &big_int) {
   os << big_int.toString();
   return os;
 }
-istream& operator>>(istream &is, BigInteger &big_int) {
-  string input;
+std::istream& operator>>(std::istream &is, BigInteger &big_int) {
+  std::string input;
   is >> input;
-  vector<char> result;
-  for (auto i = input.rbegin(); i != input.rend(); i++) {
+  std::vector<char> result;
+  big_int.is_positive = true;
+  bool signed_int = false;
+  if (input[0] == '-') {
+    signed_int = true;
+    big_int.is_positive = false;
+  } else if (input[0] == '+') {
+    signed_int = true;
+  }
+  for (auto i = input.rbegin(); i != input.rend() - signed_int; i++) {
     result.push_back(*i - '0');
   }
   big_int.number = result;
   return is;
 }
 
-string BigInteger::toString() const {
+std::string BigInteger::toString() const {
   if (number.size() == 1 && number[0] == 0) {
     return "0";
   }
-  vector<char> result;
+  std::vector<char> result;
   for (auto i = number.rbegin(); i != number.rend(); i++) {
     result.push_back(*i + '0');
   }
-  string str = {result.begin(), result.end()};
+  std::string str = {result.begin(), result.end()};
   if (!is_positive) {
     return "-" + str;
   }
@@ -371,11 +420,21 @@ BigInteger operator/(int first, const BigInteger &second) {
 BigInteger operator%(int first, const BigInteger &second) {
   return BigInteger(first) % second;
 }
-/*
-BigInteger &operator%=(const BigInteger &first, const BigInteger &second) {
-  BigInteger& first_1 = const_cast<BigInteger&>(first);
-  first_1 = first_1 % second;
-  return first_1;
+
+BigInteger::BigInteger(const std::string &input) {
+  std::vector<char> result;
+  is_positive = true;
+  bool signed_int = false;
+  if (input[0] == '-') {
+    signed_int = true;
+    is_positive = false;
+  } else if (input[0] == '+') {
+    signed_int = true;
+  }
+  for (auto i = input.rbegin(); i != input.rend() - signed_int; i++) {
+    result.push_back(*i - '0');
+  }
+  number = result;
 }
-*/
+
 #endif //FIVT_BIGINTEGER_H
