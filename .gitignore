@@ -33,3 +33,4 @@
 
 .idea/*
 cmake-build-debug/*
+/task-4-A/main.cpp
